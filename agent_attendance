@@ -1,0 +1,378 @@
+{
+  "name": "WhatsApp Message Summarizer",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Welcome to your AI Attendance Escape Planner! 🎓\n\nI can help you:\n• Track your attendance percentage\n• Calculate how many classes you can safely miss\n• Predict attendance risks\n• Plan your schedule smartly\n\nJust tell me your student ID or ask me anything about attendance!",
+        "options": {
+          "inputPlaceholder": "Ask about your attendance...",
+          "loadPreviousSession": "memory",
+          "showWelcomeScreen": true,
+          "getStarted": "Start Planning",
+          "subtitle": "Your smart attendance survival assistant",
+          "title": "AI Attendance Planner 🎓"
+        }
+      },
+      "id": "6d431417-54de-424f-8ba4-55de200588e3",
+      "name": "Student Chat Interface",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        504
+      ],
+      "webhookId": "0a078564-9e8e-4c5e-a3e1-e63f2f86e1a4"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI Attendance Escape Planner, a smart assistant helping students manage their attendance efficiently.\n\nYour capabilities:\n1. Use \"Get Attendance Records\" tool to fetch student attendance data by studentId\n2. Use \"Attendance Calculator\" tool to calculate:\n   - Current attendance percentage: (attendedClasses / totalClasses) * 100\n   - Classes that can be missed: Calculate how many classes can be skipped while staying above minimum (usually 75%)\n   - Formula: classesCanMiss = floor((attendedClasses - 0.75 * totalClasses) / 0.75)\n3. Use \"Update Attendance\" tool to save updated records\n\nRisk levels:\n- SAFE: >80% attendance (green zone)\n- CAUTION: 75-80% attendance (yellow zone - be careful!)\n- DANGER: <75% attendance (red zone - detention risk!)\n\nAlways provide:\n- Current attendance percentage\n- How many classes can be safely missed\n- Risk level assessment\n- Smart recommendations\n- Warnings if approaching minimum threshold\n\nBe friendly, encouraging, and help students plan smartly without falling into shortage!",
+          "maxIterations": 15
+        }
+      },
+      "id": "54e2de92-8996-465a-8837-d15855a015f2",
+      "name": "Attendance Planner Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        840,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "0aa4779f-da0b-451f-8fd3-bd0fe6e732e0",
+      "name": "GPT-5 Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        624
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "vbDv46yUCkecmWUV",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "f19b2935-8206-4e37-bc28-952558a2a929",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        624
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b8b469c9-6c97-4649-8e5b-f87d19279b56",
+      "name": "Attendance Calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        848,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hx9onpxAS5CbGJNZ",
+          "mode": "list",
+          "cachedResultName": "attendance_info_record",
+          "cachedResultUrl": "/projects/b0cW5GCSNTJO3CBQ/datatables/hx9onpxAS5CbGJNZ"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "studentId",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('studentId', 'The student ID to look up') }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "7f70debe-6a38-4791-927d-342a3926d5a0",
+      "name": "Get Attendance Records",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hx9onpxAS5CbGJNZ",
+          "mode": "list",
+          "cachedResultName": "attendance_info_record",
+          "cachedResultUrl": "/projects/b0cW5GCSNTJO3CBQ/datatables/hx9onpxAS5CbGJNZ"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "studentId",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('studentId', 'The student ID to update') }}"
+            }
+          ]
+        },
+        "columns": "{{ { \"studentId\": $fromAI(\"studentId\", \"Student ID\"), \"totalClasses\": $fromAI(\"totalClasses\", \"Total classes\"), \"attendedClasses\": $fromAI(\"attendedClasses\", \"Attended classes\"), \"percentage\": $fromAI(\"percentage\", \"Attendance percentage\"), \"lastUpdated\": $now.toISO() } }}",
+        "options": {}
+      },
+      "id": "d5b3e02a-b747-49ac-8d54-97f2b5afed76",
+      "name": "Update Attendance",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": {
+          "studentId": "STU12345",
+          "currentAttendance": 85.5,
+          "minimumRequired": 75,
+          "totalClasses": 100,
+          "attendedClasses": 85,
+          "classesCanMiss": 10,
+          "riskLevel": "safe",
+          "recommendation": "You can safely miss up to 10 more classes",
+          "warning": null
+        }
+      },
+      "id": "845e7a67-af1a-4932-a038-c8fb754e2ae8",
+      "name": "Response Format",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "750d1ade-cf08-4015-87cb-1a3065cdf90c",
+      "name": "Daily Attendance Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hx9onpxAS5CbGJNZ",
+          "mode": "list",
+          "cachedResultName": "attendance_info_record",
+          "cachedResultUrl": "/projects/b0cW5GCSNTJO3CBQ/datatables/hx9onpxAS5CbGJNZ"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "percentage",
+              "condition": "lt",
+              "keyValue": "80"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "0d6de46c-1338-4d16-b9c8-75616680fb6e",
+      "name": "Find At-Risk Students",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 💬 Student Chat Interface\n\nStudents interact with the AI agent through this hosted chat.\nAgent simply btayega ki kya krna hai agr tum bunk marge to!!!",
+        "height": 200,
+        "width": 600,
+        "color": 2
+      },
+      "id": "ec621dc4-3358-4223-8c93-3496093fa362",
+      "name": "Sticky Note b9ce5291",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ⏰ Daily Attendance Monitoring\n\nDaily batayega kii kiska attendance kam hai tooh bunk possible nhi hai",
+        "height": 200,
+        "width": 600,
+        "color": 4
+      },
+      "id": "5a2721cb-edcc-442c-805e-2a74396207e9",
+      "name": "Sticky Note c7837b06",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🛠️ AI Agent Tools\n\n1. **Calculator**: Performs attendance math\n2. **Get Records**: Fetches student data\n3. **Update Records**: Saves changes\n4. **Structured Output**: Ensures consistent responses",
+        "height": 500,
+        "width": 300,
+        "color": 5
+      },
+      "id": "f78a70cc-cb95-48cb-b9be-020a3ca145df",
+      "name": "Sticky Note a8aa5b65",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        784
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Student Chat Interface": {
+      "main": [
+        [
+          {
+            "node": "Attendance Planner Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-5 Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Attendance Planner Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Attendance Planner Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attendance Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Attendance Planner Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Attendance Records": {
+      "ai_tool": [
+        [
+          {
+            "node": "Attendance Planner Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Attendance": {
+      "ai_tool": [
+        [
+          {
+            "node": "Attendance Planner Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Format": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Attendance Planner Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Attendance Check": {
+      "main": [
+        [
+          {
+            "node": "Find At-Risk Students",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "15d6ab3f-7ed1-448a-8782-2eb30d95f28e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7fe6c1b5607e420b43d5771b8a0d3ecaa510242af3a50d3738e6356081087f03"
+  },
+  "id": "bTfvZucRmOYmxYAa",
+  "tags": []
+}

@@ -20,3 +20,5 @@ An AI-powered workflow built using n8n and OpenAI API to monitor student attenda
 - WhatsApp alerts
 - AI attendance advisor
 - Predictive analytics
+
+//aash1sh9
